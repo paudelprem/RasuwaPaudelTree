@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Digital Banshawali – Rasuwa Paudel</title>
+
+<style>
+body{margin:0;font-family:system-ui;background:#f5f2ea;overflow:hidden}
+header{height:52px;background:#f4efe6;display:flex;align-items:center;
+padding:0 16px;font-weight:600;gap:10px;border-bottom:1px solid #ddd}
+header button{background:#b36b2f;color:#fff;border:none;
+padding:6px 12px;border-radius:8px;cursor:pointer}
+header button.gray{background:#777}
+#treeWrap{width:100vw;height:calc(100vh - 52px);
+background:#f9f7f2;overflow:hidden;cursor:grab;position:relative}
+#tree{position:absolute;transform-origin:0 0}
+.tree-node{background:#fff;border:1px solid #c9b8a6;border-radius:12px;
+padding:10px;min-width:150px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.tree-node img{width:60px;height:60px;border-radius:50%;object-fit:cover;background:#ddd}
+.tree-node.alive::after{content:"🟢";display:inline-block;margin-left:6px}
+.tree-node.dead::after{content:"⚫";display:inline-block;margin-left:6px}
+.gen{font-size:11px;background:#dfd7cd;border-radius:10px;padding:2px 6px;margin-top:4px}
+.row{display:flex;gap:28px;justify-content:center;margin-bottom:16px}
+.children{display:flex;gap:28px;justify-content:center}
+
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40}
+.modal-box{background:#fff;max-width:720px;margin:20px auto;
+padding:16px;border-radius:14px}
+</style>
+</head>
+
+<body>
+
+<header>
+🌳 Digital Banshawali
+<label>
+<input type="checkbox" onchange="togglePublic(this.checked)">
+ Public View
+</label>
+
+<button onclick="printTree()">Print / PDF</button>
+<button onclick="exportJSON()">Backup</button>
+<button onclick="document.getElementById('importer').click()">Restore</button>
+<button onclick="alert('Reports coming soon')">Reports</button>
+<input type="file" id="importer" onchange="importJSON(event)" hidden>
+</header>
+
+<div id="treeWrap"><div id="tree"></div></div>
+
+<div class="modal" id="modal">
+<div class="modal-box">
+<h3 id="modalName"></h3>
+<button onclick="closeModal()">Close</button>
+</div>
+</div>
+
+<script>
+/* ================= CONFIG ================= */
+let PUBLIC_VIEW = false;
+
+/* ================= DATA ================= */
+let persons={},currentID=null,scale=1,offset={x:window.innerWidth/2-150,y:20};
+const gid=()=> "p"+Date.now();
+
+const saved=localStorage.getItem("banshawaliData");
+if(saved){
+  persons=JSON.parse(saved);
+  currentID=Object.keys(persons)[0];
+}else{
+  let id=gid();
+  persons[id]={id,name:"धर्मदत्त पौडेल",status:"alive",children:[]};
+  currentID=id;
+  store();
+}
+
+function store(){
+  localStorage.setItem("banshawaliData",JSON.stringify(persons));
+}
+
+/* ================= TREE ================= */
+function renderTree(){
+  tree.innerHTML="";
+  tree.appendChild(buildTree(currentID,1));
+  applyTransform();
+}
+
+function buildTree(id,gen){
+  let p=persons[id];
+  let wrap=document.createElement("div");
+  let row=document.createElement("div");row.className="row";
+  row.appendChild(nodeCard(p,gen));
+  wrap.appendChild(row);
+
+  if(p.children && p.children.length){
+    let cw=document.createElement("div");cw.className="children";
+    p.children.forEach(cid=>{
+      if(persons[cid]) cw.appendChild(buildTree(cid,gen+1));
+    });
+    wrap.appendChild(cw);
+  }
+  return wrap;
+}
+
+function nodeCard(p,gen){
+  let d=document.createElement("div");
+  d.className="tree-node "+(p.status==="dead"?"dead":"alive");
+  d.innerHTML=`<div><b>${p.name}</b> <span class="gen">पु.${gen}</span></div>`;
+  d.style.cursor=PUBLIC_VIEW?"default":"pointer";
+
+  d.onclick=()=>{
+    if(PUBLIC_VIEW){
+      alert("Public view only");
+    }else{
+      openModal(p.id);
+    }
+  };
+  return d;
+}
+
+/* ================= MODAL ================= */
+function openModal(id){
+  currentID=id;
+  modalName.innerText=persons[id].name;
+  modal.style.display="block";
+}
+function closeModal(){modal.style.display="none";}
+
+/* ================= ACTIONS ================= */
+function togglePublic(v){
+  PUBLIC_VIEW=v;
+  renderTree();
+}
+
+function printTree(){
+  alert("Use browser Print (Ctrl+P)");
+}
+
+function exportJSON(){
+  let blob=new Blob([JSON.stringify(persons,null,2)],{type:"application/json"});
+  let a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="Banshawali_Backup.json";
+  a.click();
+}
+
+function importJSON(e){
+  let r=new FileReader();
+  r.onload=x=>{
+    persons=JSON.parse(x.target.result);
+    store();renderTree();
+  };
+  r.readAsText(e.target.files[0]);
+}
+
+/* ================= PAN / ZOOM ================= */
+treeWrap.onwheel=e=>{
+  scale+=e.deltaY*-0.001;
+  scale=Math.min(Math.max(.4,scale),2);
+  applyTransform();
+};
+let drag=false,start={};
+treeWrap.onmousedown=e=>{
+  drag=true;start={x:e.clientX-offset.x,y:e.clientY-offset.y};
+};
+treeWrap.onmousemove=e=>{
+  if(drag){
+    offset.x=e.clientX-start.x;
+    offset.y=e.clientY-start.y;
+    applyTransform();
+  }
+};
+treeWrap.onmouseup=()=>drag=false;
+
+function applyTransform(){
+  tree.style.transform=`translate(${offset.x}px,${offset.y}px) scale(${scale})`;
+}
+
+/* ================= INIT ================= */
+renderTree();
+</script>
+</body>
+</html>
