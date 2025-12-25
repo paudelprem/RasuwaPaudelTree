@@ -2,99 +2,110 @@
 <html lang="ne">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Digital Banshawali – Rasuwa Paudel</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Digital Banshawali – Entry System</title>
 
 <style>
 body{margin:0;font-family:system-ui;background:#f5f2ea;overflow:hidden}
-header{height:52px;background:#f4efe6;display:flex;align-items:center;padding:0 16px;font-weight:600;gap:14px;border-bottom:1px solid #e0d8cd}
+header{height:52px;background:#f4efe6;display:flex;align-items:center;
+padding:0 16px;font-weight:600;gap:12px;border-bottom:1px solid #ddd}
 #treeWrap{width:100vw;height:calc(100vh - 52px);overflow:hidden;position:relative;background:#faf8f4}
 #tree{position:absolute;transform-origin:0 0}
 
 .node{
-  background:#fff;
-  border:1px solid #cbb8a3;
-  border-radius:12px;
-  padding:10px 14px;
-  min-width:160px;
-  text-align:center;
-  cursor:pointer;
-  box-shadow:0 2px 6px rgba(0,0,0,.06)
+ background:#fff;border:1px solid #cbb8a3;border-radius:12px;
+ padding:10px 14px;min-width:170px;text-align:center;
+ box-shadow:0 2px 6px rgba(0,0,0,.06);cursor:pointer
 }
-.node.alive::before{content:"🟢 ";font-size:14px}
-.node.dead::before{content:"⚫ ";font-size:14px}
+.node img{
+ width:60px;height:60px;border-radius:50%;
+ object-fit:cover;background:#ddd;margin-bottom:6px
+}
+.node.alive::after{content:" 🟢"}
+.node.dead::after{content:" ⚫"}
 .gen{font-size:11px;color:#666;margin-top:4px}
 
 .row{display:flex;gap:28px;justify-content:center;margin-bottom:18px}
 .children{display:flex;gap:28px;justify-content:center}
 
-.modal{
-  position:fixed;inset:0;
-  background:rgba(0,0,0,.45);
-  display:none;z-index:50
-}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:50}
 .modal-box{
-  background:#fff;
-  max-width:760px;
-  margin:30px auto;
-  padding:16px;
-  border-radius:14px;
-  max-height:90vh;
-  overflow:auto
+ background:#fff;max-width:820px;margin:24px auto;padding:16px;
+ border-radius:14px;max-height:92vh;overflow:auto
 }
 
-label{font-size:13px;font-weight:600}
-input{width:100%;padding:8px;margin:6px 0 12px;border:1px solid #ccc;border-radius:6px}
-button{padding:8px 14px;border:none;border-radius:8px;background:#b36b2f;color:#fff;cursor:pointer}
-.gray{background:#777}
 .tabs{display:flex;gap:8px;margin-bottom:12px}
-.tabs button{background:#ddd;color:#000}
+.tabs button{background:#ddd;color:#000;border:none;padding:6px 12px;border-radius:6px}
 .tabs button.active{background:#b36b2f;color:#fff}
+
+label{font-size:13px;font-weight:600}
+input,select,textarea{
+ width:100%;padding:8px;margin:6px 0 12px;
+ border:1px solid #ccc;border-radius:6px
+}
+textarea{min-height:70px}
+
+button{padding:8px 14px;border:none;border-radius:8px;
+ background:#b36b2f;color:#fff;cursor:pointer}
+.gray{background:#777}
 </style>
 </head>
 
 <body>
 
 <header>
-🌳 Digital Banshawali
+🌳 Digital Banshawali — Entry
 <button style="margin-left:auto" onclick="exportJSON()">Backup</button>
 <input type="file" id="importer" hidden onchange="importJSON(event)">
 <button class="gray" onclick="importer.click()">Restore</button>
 </header>
 
-<div id="treeWrap">
-  <div id="tree"></div>
-</div>
+<div id="treeWrap"><div id="tree"></div></div>
 
 <!-- MODAL -->
 <div class="modal" id="modal">
-  <div class="modal-box">
-    <h2 id="mTitle"></h2>
+<div class="modal-box">
+<h2 id="mTitle"></h2>
 
-    <div class="tabs">
-      <button id="tView" onclick="setTab('view')">View</button>
-      <button id="tEdit" onclick="setTab('edit')">Edit</button>
-      <button id="tRel" onclick="setTab('rel')">Relations</button>
-    </div>
+<div class="tabs">
+<button id="tView" onclick="setTab('view')">View</button>
+<button id="tEdit" onclick="setTab('edit')">Edit</button>
+<button id="tRel" onclick="setTab('rel')">Relations</button>
+</div>
 
-    <div id="viewTab"></div>
-    <div id="editTab" style="display:none"></div>
-    <div id="relTab" style="display:none"></div>
+<div id="viewTab"></div>
+<div id="editTab" style="display:none"></div>
+<div id="relTab" style="display:none"></div>
 
-    <button class="gray" onclick="closeModal()">Close</button>
-  </div>
+<button class="gray" onclick="closeModal()">Close</button>
+</div>
 </div>
 
 <script>
+/* ================= DATA ================= */
 let persons={},current=null;
-let scale=1,offset={x:window.innerWidth/2-120,y:30};
-
+let scale=1,offset={x:window.innerWidth/2-140,y:30};
 const gid=()=> "p"+Date.now();
 
 function blank(id){
  return{
-  id,name:"",gender:"पुरुष",status:"alive",
-  father:null,mother:null,spouses:[],children:[]
+  id,name:"",photo:"",gender:"पुरुष",
+  status:"alive",birth:"",marriage:"",death:"",
+  marital_status:"single",
+  father:null,mother:null,spouses:[],children:[],
+  address:{
+    origin:{},permanent:{},current:{}
+  },
+  profile:{
+    education:"",employment_status:"",
+    employment_detail:"",disability_status:"",
+    biography:""
+  },
+  contact:{
+    mobile:"",mobile_alt:"",home_phone:"",
+    email:"",facebook:"",whatsapp:"",
+    viber:"",website:""
+  }
  };
 }
 
@@ -116,25 +127,24 @@ document.addEventListener("DOMContentLoaded",()=>{
  renderTree();
 });
 
-/* TREE */
+/* ================= TREE ================= */
 function renderTree(){
  tree.innerHTML="";
  tree.appendChild(build(findRoot(),1));
  applyTransform();
 }
-
 function findRoot(){
- return Object.values(persons).find(p=>!p.father&&!p.mother)?.id || current;
+ return Object.values(persons).find(p=>!p.father&&!p.mother)?.id||current;
 }
-
 function build(id,gen){
  let p=persons[id]; if(!p)return document.createElement("div");
  let wrap=document.createElement("div");
- let row=document.createElement("div"); row.className="row";
+ let row=document.createElement("div");row.className="row";
  row.appendChild(card(p,gen));
+ (p.spouses||[]).forEach(s=>persons[s]&&row.appendChild(card(persons[s],gen)));
  wrap.appendChild(row);
 
- let kids=p.children.map(cid=>persons[cid]).filter(Boolean);
+ let kids=(p.children||[]).map(id=>persons[id]).filter(Boolean);
  if(kids.length){
   let ch=document.createElement("div");ch.className="children";
   kids.forEach(k=>ch.appendChild(build(k.id,gen+1)));
@@ -142,39 +152,45 @@ function build(id,gen){
  }
  return wrap;
 }
-
 function card(p,gen){
  let d=document.createElement("div");
  d.className="node "+(p.status==="dead"?"dead":"alive");
- d.innerHTML=`${p.name}<div class="gen">पु. ${gen}</div>`;
+ d.innerHTML=`
+  ${p.photo?`<img src="${p.photo}">`:""}
+  <div>${p.name}</div>
+  <div class="gen">पु. ${gen}</div>`;
  d.onclick=()=>openModal(p.id);
  return d;
 }
 
-/* PAN / ZOOM */
+/* ================= PAN / ZOOM ================= */
 treeWrap.onwheel=e=>{
  scale+=e.deltaY*-0.001;
  scale=Math.min(Math.max(.4,scale),2);
  applyTransform();
-}
+};
 let drag=false,start={};
 treeWrap.onmousedown=e=>{drag=true;start={x:e.clientX-offset.x,y:e.clientY-offset.y}};
-treeWrap.onmousemove=e=>{if(drag){offset.x=e.clientX-start.x;offset.y=e.clientY-start.y;applyTransform();}};
+treeWrap.onmousemove=e=>{
+ if(drag){offset.x=e.clientX-start.x;offset.y=e.clientY-start.y;applyTransform();}
+};
 treeWrap.onmouseup=()=>drag=false;
-function applyTransform(){tree.style.transform=`translate(${offset.x}px,${offset.y}px) scale(${scale})`;}
+function applyTransform(){
+ tree.style.transform=`translate(${offset.x}px,${offset.y}px) scale(${scale})`;
+}
 
-/* MODAL */
+/* ================= MODAL ================= */
 function openModal(id){
  current=id;
  let p=persons[id];
  mTitle.innerText=p.name;
- loadView(p); loadEdit(p); loadRel(p);
+ loadView(p);loadEdit(p);loadRel(p);
  setTab("view");
  modal.style.display="block";
 }
 function closeModal(){modal.style.display="none";}
 
-/* TABS */
+/* ================= TABS ================= */
 function setTab(t){
  viewTab.style.display=t==="view"?"block":"none";
  editTab.style.display=t==="edit"?"block":"none";
@@ -184,45 +200,82 @@ function setTab(t){
  tRel.classList.toggle("active",t==="rel");
 }
 
-/* VIEW */
+/* ================= VIEW ================= */
 function loadView(p){
  viewTab.innerHTML=`
  <p><b>नाम:</b> ${p.name}</p>
  <p><b>स्थिति:</b> ${p.status==="dead"?"दिवंगत":"जीवित"}</p>
  <p><b>Father:</b> ${p.father?persons[p.father].name:"-"}</p>
  <p><b>Mother:</b> ${p.mother?persons[p.mother].name:"-"}</p>
+ <p><b>Partner:</b> ${(p.spouses||[]).map(id=>persons[id].name).join(", ")||"-"}</p>
  <p><b>Children:</b> ${(p.children||[]).map(id=>persons[id].name).join(", ")||"-"}</p>
+ <p><b>Biography:</b><br>${p.profile.biography||"-"}</p>
  `;
 }
 
-/* EDIT */
+/* ================= EDIT (FINAL FORM) ================= */
 function loadEdit(p){
  editTab.innerHTML=`
  <label>नाम</label>
  <input id="e_name" value="${p.name}">
+ <label>Photo URL</label>
+ <input id="e_photo" value="${p.photo}">
+ <label>लिङ्ग</label>
+ <select id="e_gender">
+  <option ${p.gender==="पुरुष"?"selected":""}>पुरुष</option>
+  <option ${p.gender==="महिला"?"selected":""}>महिला</option>
+ </select>
  <label>स्थिति</label>
  <select id="e_status">
-   <option value="alive"${p.status==="alive"?" selected":""}>जीवित</option>
-   <option value="dead"${p.status==="dead"?" selected":""}>दिवंगत</option>
+  <option value="alive"${p.status==="alive"?" selected":""}>जीवित</option>
+  <option value="dead"${p.status==="dead"?" selected":""}>दिवंगत</option>
  </select>
+
+ <label>जन्म मिति</label>
+ <input id="e_birth" value="${p.birth}">
+ <label>विवाह मिति</label>
+ <input id="e_marriage" value="${p.marriage}">
+ <label>मृत्यु मिति</label>
+ <input id="e_death" value="${p.death}">
+
+ <label>शिक्षा</label>
+ <input id="e_edu" value="${p.profile.education}">
+ <label>रोजगारी</label>
+ <input id="e_job" value="${p.profile.employment_status}">
+ <label>विवरण</label>
+ <input id="e_jobd" value="${p.profile.employment_detail}">
+ <label>अपाङ्गता</label>
+ <input id="e_dis" value="${p.profile.disability_status}">
+
+ <label>Biography</label>
+ <textarea id="e_bio">${p.profile.biography}</textarea>
+
  <button onclick="savePerson()">Save</button>
  `;
 }
 function savePerson(){
  let p=persons[current];
  p.name=e_name.value;
+ p.photo=e_photo.value;
+ p.gender=e_gender.value;
  p.status=e_status.value;
+ p.birth=e_birth.value;
+ p.marriage=e_marriage.value;
+ p.death=e_death.value;
+ p.profile.education=e_edu.value;
+ p.profile.employment_status=e_job.value;
+ p.profile.employment_detail=e_jobd.value;
+ p.profile.disability_status=e_dis.value;
+ p.profile.biography=e_bio.value;
  store();renderTree();openModal(current);
 }
 
-/* RELATIONS */
+/* ================= RELATIONS ================= */
 function loadRel(p){
  relTab.innerHTML=`
- <p>Father: ${p.father?persons[p.father].name:"-"}</p>
- <button onclick="addFather()">+ Father</button><br><br>
- <p>Mother: ${p.mother?persons[p.mother].name:"-"}</p>
- <button onclick="addMother()">+ Mother</button><br><br>
- <p>Children</p>
+ <button onclick="addFather()">+ Father</button>
+ <button onclick="addMother()">+ Mother</button>
+ <button onclick="addPartner()">+ Partner</button>
  <button onclick="addChild()">+ Child</button>
  `;
 }
@@ -238,22 +291,35 @@ function addMother(){
  persons[id].children.push(current);
  store();renderTree();openModal(id);
 }
+function addPartner(){
+ let id=gid();persons[id]=blank(id);
+ persons[current].spouses.push(id);
+ persons[id].spouses.push(current);
+ store();renderTree();openModal(id);
+}
 function addChild(){
  let id=gid();persons[id]=blank(id);
- persons[id].father=current;
- persons[current].children.push(id);
+ let p=persons[current];
+ if(p.gender==="पुरुष"){
+  persons[id].father=current;
+  if(p.spouses[0]){persons[id].mother=p.spouses[0];persons[p.spouses[0]].children.push(id);}
+ }else{
+  persons[id].mother=current;
+  if(p.spouses[0]){persons[id].father=p.spouses[0];persons[p.spouses[0]].children.push(id);}
+ }
+ p.children.push(id);
  store();renderTree();openModal(id);
 }
 
-/* BACKUP */
+/* ================= BACKUP ================= */
 function exportJSON(){
  let a=document.createElement("a");
- a.href=URL.createObjectURL(new Blob([JSON.stringify(persons)],{type:"application/json"}));
+ a.href=URL.createObjectURL(new Blob([JSON.stringify(persons,null,2)],{type:"application/json"}));
  a.download="banshawali-backup.json";a.click();
 }
 function importJSON(e){
  let r=new FileReader();
- r.onload=x=>{persons=JSON.parse(x.target.result);store();renderTree();}
+ r.onload=x=>{persons=JSON.parse(x.target.result);store();renderTree();};
  r.readAsText(e.target.files[0]);
 }
 </script>
